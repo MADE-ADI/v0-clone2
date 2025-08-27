@@ -6,6 +6,7 @@ import { AuthWidget } from '@/components/auth/AuthWidget'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { DownloadButton, FilePreviewButton } from '@/components/DownloadButton'
 import { TestDownloadButton } from '@/components/TestDownloadButton'
+import { MobilePreviewButton } from '@/components/MobilePreviewButton'
 
 import {
   PromptInput,
@@ -116,11 +117,11 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen flex">
+      <div className="h-screen flex flex-col md:flex-row mobile-safe-area">
         {/* Chat Panel */}
-        <div className="w-1/2 flex flex-col border-r">
+        <div className="flex-1 md:w-1/2 flex flex-col md:border-r mobile-chat-height md:h-auto">
           {/* Header */}
-          <div className="border-b p-3 h-14 flex items-center justify-between">
+          <div className="border-b p-3 h-14 flex items-center justify-between flex-shrink-0">
             <h1 className="text-lg font-semibold">v0 Clone</h1>
             <div className="flex items-center gap-2">
               {/* Debug: Show current chat status */}
@@ -146,7 +147,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {chatHistory.length === 0 ? (
             <div className="text-center font-semibold mt-8">
-              <p className="text-3xl mt-4">What can we build together?</p>
+              <p className="text-2xl md:text-3xl mt-4">What can we build together?</p>
             </div>
           ) : (
             <>
@@ -183,7 +184,7 @@ export default function Home() {
         </div>
 
         {/* Input */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 flex-shrink-0">
           {!currentChat && (
             <Suggestions>
               <Suggestion
@@ -224,16 +225,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Preview Panel */}
-      <div className="w-1/2 flex flex-col">
+      {/* Preview Panel - Hidden on mobile, shown on desktop */}
+      <div className="hidden md:flex md:w-1/2 flex-col">
         <WebPreview>
           <WebPreviewNavigation>
             <WebPreviewUrl
               readOnly
-              placeholder="Your app here..."
+              placeholder={currentChat && currentChat.demo ? "Your app here..." : "Preview will appear after generation completes"}
               value={currentChat?.demo}
             />
-            {currentChat && (
+            {currentChat && currentChat.demo && (
               <div className="flex items-center gap-2 ml-2">
                 <DownloadButton 
                   chat={currentChat} 
@@ -243,9 +244,21 @@ export default function Home() {
               </div>
             )}
           </WebPreviewNavigation>
-          <WebPreviewBody src={currentChat?.demo} />
+          {currentChat && currentChat.demo ? (
+            <WebPreviewBody src={currentChat.demo} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center space-y-2">
+                <div className="text-lg">No preview available</div>
+                <div className="text-sm">Generate an app to see the preview</div>
+              </div>
+            </div>
+          )}
         </WebPreview>
       </div>
+
+      {/* Mobile Preview Button - Only shows when there's a generated app */}
+      <MobilePreviewButton chat={currentChat} />
     </div>
     </ProtectedRoute>
   )

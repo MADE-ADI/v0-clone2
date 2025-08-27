@@ -120,3 +120,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile responsive improvements */
+.mobile-safe-area {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 768px) {
+  .mobile-chat-height {
+    height: calc(100vh - env(safe-area-inset-bottom));
+  }
+  
+  .mobile-preview-button {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+}
