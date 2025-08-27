@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AuthWidget } from '@/components/auth/AuthWidget'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { DownloadButton, FilePreviewButton } from '@/components/DownloadButton'
+import { TestDownloadButton } from '@/components/TestDownloadButton'
 
 import {
   PromptInput,
@@ -73,10 +76,12 @@ export default function Home() {
       }
 
       const chat: Chat = await response.json()
+      console.log('Chat response received:', chat)
       setCurrentChat(chat)
 
       // Update chat history with structured content from v0 API
       if (chat.messages) {
+        console.log('Chat messages:', chat.messages)
         setChatHistory(
           chat.messages.map((msg) => ({
             type: msg.role,
@@ -117,7 +122,25 @@ export default function Home() {
           {/* Header */}
           <div className="border-b p-3 h-14 flex items-center justify-between">
             <h1 className="text-lg font-semibold">v0 Clone</h1>
-            <AuthWidget />
+            <div className="flex items-center gap-2">
+              {/* Debug: Show current chat status */}
+              {/* <span className="text-xs text-muted-foreground">
+                Chat: {currentChat ? 'Yes' : 'No'}
+              </span> */}
+              {/* Test download button */}
+              {/* <TestDownloadButton /> */}
+              {/* {currentChat && (
+                <>
+                  <FilePreviewButton chat={currentChat} />
+                  <DownloadButton 
+                    chat={currentChat} 
+                    projectName={`v0-project-${currentChat.id.slice(-6)}`}
+                  />
+                </>
+              )} */}
+              <ThemeToggle />
+              <AuthWidget />
+            </div>
           </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -145,7 +168,12 @@ export default function Home() {
                   <MessageContent>
                     <div className="flex items-center gap-2">
                       <Loader />
-                      Creating your app...
+                      <div className="space-y-1">
+                        <div>Creating your app...</div>
+                        <div className="text-xs text-muted-foreground">
+                          This may take up to 60 seconds as we generate your code
+                        </div>
+                      </div>
                     </div>
                   </MessageContent>
                 </Message>
@@ -205,6 +233,15 @@ export default function Home() {
               placeholder="Your app here..."
               value={currentChat?.demo}
             />
+            {currentChat && (
+              <div className="flex items-center gap-2 ml-2">
+                <DownloadButton 
+                  chat={currentChat} 
+                  projectName={`v0-project-${currentChat.id.slice(-6)}`}
+                  className="text-xs"
+                />
+              </div>
+            )}
           </WebPreviewNavigation>
           <WebPreviewBody src={currentChat?.demo} />
         </WebPreview>

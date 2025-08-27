@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader } from "@/components/ai-elements/loader";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -39,7 +40,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8 relative">
+      {/* Theme toggle in top right corner */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <div className="text-center space-y-6 max-w-md w-full mx-auto p-6 lg:p-8">
         <div className="space-y-2">
           <h1 className="text-2xl lg:text-3xl font-bold">Welcome to v0 Clone</h1>
