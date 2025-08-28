@@ -6,7 +6,7 @@ import { AuthWidget } from '@/components/auth/AuthWidget'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { DownloadButton, FilePreviewButton } from '@/components/DownloadButton'
 import { TestDownloadButton } from '@/components/TestDownloadButton'
-import { MobilePreviewButton } from '@/components/MobilePreviewButton'
+import MobilePreviewButton from '@/components/MobilePreviewButton'
 
 import {
   PromptInput,
@@ -61,6 +61,12 @@ export default function Home() {
     setChatHistory((prev) => [...prev, { type: 'user', content: userMessage }])
 
     try {
+      console.log('Sending request to /api/chat...')
+      
+      // Create an AbortController for the request timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout to match API
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -70,44 +76,109 @@ export default function Home() {
           message: userMessage,
           chatId: currentChat?.id,
         }),
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+
+      console.log('Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create chat')
+        const errorData = await response.text()
+        console.error('API Error Response:', errorData)
+        throw new Error(`API Error: ${response.status} - ${errorData}`)
       }
 
-      const chat: Chat = await response.json()
-      console.log('Chat response received:', chat)
+      let chat: Chat
+      try {
+        chat = await response.json()
+        console.log('Successfully parsed chat response:', {
+          id: chat.id,
+          demo: chat.demo,
+          messagesLength: chat.messages?.length,
+          hasDemo: !!chat.demo
+        })
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError)
+        // Note: Can't read response.text() again after response.json() failed
+        throw new Error('Invalid JSON response from API')
+      }
+
+      // Validate required fields
+      if (!chat.id) {
+        console.error('Missing chat.id in response:', chat)
+        throw new Error('Invalid response: missing chat ID')
+      }
+
+      console.log('Setting current chat...')
       setCurrentChat(chat)
 
       // Update chat history with structured content from v0 API
-      if (chat.messages) {
-        console.log('Chat messages:', chat.messages)
-        setChatHistory(
-          chat.messages.map((msg) => ({
-            type: msg.role,
-            // Use experimental_content if available, otherwise fall back to plain content
-            content: msg.experimental_content || msg.content,
-          })),
-        )
-      } else {
-        // Final fallback
-        setChatHistory((prev) => [
-          ...prev,
-          {
-            type: 'assistant',
-            content: 'Generated new app preview. Check the preview panel!',
-          },
-        ])
+      try {
+        if (chat.messages && Array.isArray(chat.messages)) {
+          console.log('Processing chat messages:', chat.messages.length)
+          setChatHistory(
+            chat.messages.map((msg, index) => {
+              console.log(`Processing message ${index}:`, {
+                role: msg.role,
+                hasContent: !!msg.content,
+                hasExperimentalContent: !!msg.experimental_content
+              })
+              return {
+                type: msg.role,
+                content: msg.experimental_content || msg.content,
+              }
+            }),
+          )
+        } else {
+          console.log('No valid messages array, using fallback. Messages:', chat.messages)
+          // Final fallback
+          setChatHistory((prev) => [
+            ...prev,
+            {
+              type: 'assistant',
+              content: 'Generated new app preview. Check the preview panel!',
+            },
+          ])
+        }
+        console.log('Chat history updated successfully')
+      } catch (historyError) {
+        console.error('Error updating chat history:', historyError)
+        throw historyError
       }
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Frontend Error Details:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error
+      })
+      
+      // Handle different types of errors with specific messages
+      let errorMessage = "Sorry, there was an error creating your app. Please try again."
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Request timed out. The generation process is taking longer than expected. Please try with a simpler request."
+        } else if (error.message.includes('504')) {
+          errorMessage = "Server timeout (504). The generation process took too long. Please try with a simpler request or try again later."
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network connection error. Please check your internet connection and try again."
+        } else {
+          errorMessage = `Error: ${error.message}. Please try again.`
+        }
+      }
+      
       setChatHistory((prev) => [
         ...prev,
         {
           type: 'assistant',
-          content:
-            'Sorry, there was an error creating your app. Please try again.',
+          content: errorMessage,
         },
       ])
     } finally {
@@ -184,7 +255,7 @@ export default function Home() {
         </div>
 
         {/* Input */}
-        <div className="border-t p-4 flex-shrink-0">
+        <div className="border-t p-4 flex-shrink-0 mobile-input-area">
           {!currentChat && (
             <Suggestions>
               <Suggestion

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'v0-sdk'
 
+// Configure the maximum duration for this API route (10 minutes)
+export const maxDuration = 600
+
 // Validate API key before creating client
 const apiKey = process.env.V0_API_KEY
 if (!apiKey) {
@@ -25,9 +28,9 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  // Set timeout for the request (increased to 90 seconds)
+  // Set timeout for the request (increased to 10 minutes)
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 90000) // 90 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout
   let startTime: number = 0
   
   try {
@@ -60,9 +63,9 @@ export async function POST(request: NextRequest) {
     
     while (retryCount <= maxRetries) {
       try {
-        // Create timeout promise (increased to 90 seconds for complex V0 processing)
+        // Create timeout promise (increased to 10 minutes for complex V0 processing)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('V0 API request timeout')), 90000) // 90 second timeout
+          setTimeout(() => reject(new Error('V0 API request timeout')), 600000) // 10 minute timeout
         })
         
         let apiCall: Promise<any>

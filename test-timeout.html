@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V0 Clone Timeout Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 8px;
+        }
+        .test-button:hover {
+            background: #0060df;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        .status.loading {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #0070f3;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 V0 Clone Timeout Test</h1>
+        <p>Test untuk mengidentifikasi masalah timeout dengan prompt: <strong>"Build a todo app with React"</strong></p>
+        
+        <div class="test-controls">
+            <button class="test-button" onclick="runQuickTest()">Quick Test (30s)</button>
+            <button class="test-button" onclick="runMediumTest()">Medium Test (2m)</button>
+            <button class="test-button" onclick="runLongTest()">Long Test (10m)</button>
+            <button class="test-button" onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div id="status" class="status" style="display: none;"></div>
+        <div class="progress" id="progress" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="log" id="log">Ready to test... Click a test button above.</div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        const progress = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
+            progress.style.display = percent > 0 ? 'block' : 'none';
+        }
+
+        function clearLog() {
+            log.textContent = 'Log cleared.\n';
+            status.style.display = 'none';
+            progress.style.display = 'none';
+        }
+
+        function disableButtons(disabled) {
+            const buttons = document.querySelectorAll('.test-button');
+            buttons.forEach(btn => {
+                if (btn.textContent !== 'Clear Log') {
+                    btn.disabled = disabled;
+                }
+            });
+        }
+
+        async function runTest(timeoutMs, testName) {
+            const startTime = Date.now();
+            
+            addLog(`🚀 Starting ${testName} (timeout: ${timeoutMs/1000}s)`);
+            addLog(`📝 Prompt: "Build a todo app with React"`);
+            updateStatus(`Running ${testName}...`, 'loading');
+            updateProgress(5);
+            disableButtons(true);
+
+            // Progress timer
+            const progressInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const percent = Math.min((elapsed / timeoutMs) * 100, 95);
+                updateProgress(percent);
+            }, 1000);
+
+            try {
+                // Create AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    addLog(`⏰ Timeout reached (${timeoutMs/1000}s), aborting request`);
+                    controller.abort();
+                }, timeoutMs);
+
+                addLog(`📤 Sending request to /api/chat...`);
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Build a todo app with React',
+                        chatId: null,
+                    }),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const elapsed = Date.now() - startTime;
+                
+                addLog(`📊 Response received: ${response.status} ${response.statusText} (${elapsed}ms)`);
+                addLog(`📋 Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}`);
+
+                if (response.ok) {
+                    try {
+                        const data = await response.json();
+                        addLog(`✅ SUCCESS: Valid JSON response received`);
+                        addLog(`📄 Response data: ${JSON.stringify({
+                            id: data.id,
+                            demo: !!data.demo,
+                            messagesLength: data.messages?.length
+                        }, null, 2)}`);
+                        updateStatus(`✅ ${testName} completed successfully in ${elapsed}ms`, 'success');
+                        updateProgress(100);
+                    } catch (jsonError) {
+                        addLog(`⚠️ JSON Parse Error: ${jsonError.message}`);
+                        const text = await response.text();
+                        addLog(`📄 Raw response: ${text.substring(0, 500)}...`);
+                        updateStatus(`⚠️ ${testName} succeeded but JSON invalid`, 'error');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    addLog(`❌ HTTP Error: ${response.status}`);
+                    addLog(`📄 Error response: ${errorText.substring(0, 500)}...`);
+                    
+                    if (response.status === 504) {
+                        updateStatus(`❌ ${testName} failed: Gateway Timeout (nginx issue)`, 'error');
+                        addLog(`💡 Recommendation: Increase nginx proxy_read_timeout`);
+                    } else {
+                        updateStatus(`❌ ${testName} failed: HTTP ${response.status}`, 'error');
+                    }
+                }
+
+            } catch (error) {
+                const elapsed = Date.now() - startTime;
+                addLog(`💥 Request failed after ${elapsed}ms: ${error.message}`);
+                
+                if (error.name === 'AbortError') {
+                    updateStatus(`⏰ ${testName} timed out after ${timeoutMs/1000}s`, 'error');
+                    addLog(`💡 Recommendation: API processing time exceeds ${timeoutMs/1000}s`);
+                } else if (error.message.includes('Failed to fetch')) {
+                    updateStatus(`🌐 ${testName} failed: Network error`, 'error');
+                    addLog(`💡 Recommendation: Check network connectivity`);
+                } else {
+                    updateStatus(`❌ ${testName} failed: ${error.message}`, 'error');
+                }
+            } finally {
+                clearInterval(progressInterval);
+                disableButtons(false);
+                addLog(`⏹️ Test completed at ${new Date().toLocaleTimeString()}`);
+                addLog(`${'='.repeat(50)}\n`);
+            }
+        }
+
+        function runQuickTest() {
+            runTest(30000, 'Quick Test');
+        }
+
+        function runMediumTest() {
+            runTest(120000, 'Medium Test');
+        }
+
+        function runLongTest() {
+            runTest(600000, 'Long Test');
+        }
+
+        // Add initial log message
+        addLog('🧪 Timeout Test Tool Ready');
+        addLog('Click a test button above to start testing');
+        addLog(`📍 Testing against: ${window.location.origin}/api/chat`);
+        addLog(`${'='.repeat(50)}\n`);
+    </script>
+</body>
+</html>
