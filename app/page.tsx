@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { signIn, useSession } from 'next-auth/react'
 import { AuthWidget } from '@/components/auth/AuthWidget'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { DownloadButton, FilePreviewButton } from '@/components/DownloadButton'
 import { TestDownloadButton } from '@/components/TestDownloadButton'
 import MobilePreviewButton from '@/components/MobilePreviewButton'
+import { Button } from '@/components/ui/button'
 
 import {
   PromptInput,
@@ -40,9 +41,11 @@ interface Chat {
 }
 
 export default function Home() {
+  const { data: session } = useSession()
   const [message, setMessage] = useState('')
   const [currentChat, setCurrentChat] = useState<Chat | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const [chatHistory, setChatHistory] = useState<
     Array<{
       type: 'user' | 'assistant'
@@ -53,6 +56,12 @@ export default function Home() {
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!message.trim() || isLoading) return
+
+    // If not authenticated, show login modal and block submission
+    if (!session?.user) {
+      setShowLoginModal(true)
+      return
+    }
 
     const userMessage = message.trim()
     setMessage('')
@@ -187,7 +196,7 @@ export default function Home() {
   }
 
   return (
-    <ProtectedRoute>
+    <>
       <div className="h-screen flex flex-col md:flex-row mobile-safe-area">
         {/* Chat Panel */}
         <div className="flex-1 md:w-1/2 flex flex-col md:border-r mobile-chat-height md:h-auto">
@@ -217,8 +226,11 @@ export default function Home() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {chatHistory.length === 0 ? (
-            <div className="text-center font-semibold mt-8">
-              <p className="text-2xl md:text-3xl mt-4">What can we build together?</p>
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-2xl md:text-3xl font-semibold">What can we build together?</p>
+                <p className="mt-2 text-sm md:text-base text-muted-foreground">Build real, working software just by describing it</p>
+              </div>
             </div>
           ) : (
             <>
@@ -331,6 +343,22 @@ export default function Home() {
       {/* Mobile Preview Button - Only shows when there's a generated app */}
       <MobilePreviewButton chat={currentChat} />
     </div>
-    </ProtectedRoute>
+
+      {/* Login Required Modal */}
+      <div className={`${showLoginModal ? 'fixed' : 'hidden'} inset-0 z-50 flex items-center justify-center`}
+        aria-modal="true" role="dialog">
+        <div className="absolute inset-0 bg-black/50" onClick={() => setShowLoginModal(false)} />
+        <div className="relative w-[92%] max-w-sm rounded-lg border bg-background p-6 shadow-xl">
+          <h2 className="text-lg font-semibold">Sign in required</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Please sign in to submit a prompt and generate your app preview.
+          </p>
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowLoginModal(false)}>Cancel</Button>
+            <Button onClick={() => signIn('google')}>Continue with Google</Button>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
