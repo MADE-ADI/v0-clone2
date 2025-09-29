@@ -48,7 +48,7 @@ export default function LoginPage() {
       
       <div className="text-center space-y-6 max-w-md w-full mx-auto p-6 lg:p-8">
         <div className="space-y-2">
-          <h1 className="text-2xl lg:text-3xl font-bold">Welcome to v0 Clone</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold">Welcome to Sapien AI</h1>
           <p className="text-muted-foreground text-sm lg:text-base">
             Please sign in with your Google account to continue
           </p>

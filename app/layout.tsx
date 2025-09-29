@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'V0 Clone',
-  description: 'A clone of v0.dev with Google authentication',
+  title: 'Sapien AI',
+  description: 'Sapien AI – build real, working software just by describing it',
 }
 
 export default function RootLayout({

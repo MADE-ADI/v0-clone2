@@ -26,7 +26,7 @@ export default function TestComponent() {
   return (
     <div className="p-4">
       <h1>Test Component</h1>
-      <p>This is a test download from v0 clone.</p>
+  <p>This is a test download from Sapien AI.</p>
     </div>
   )
 }`

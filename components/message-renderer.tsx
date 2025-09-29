@@ -307,7 +307,7 @@ export function MessageRenderer({
         CodeBlock,
         MathPart,
 
-        // Styled HTML elements for the v0 clone theme
+  // Styled HTML elements for the Sapien AI theme
         p: {
           className: 'mb-4 text-gray-700 dark:text-gray-200 leading-relaxed',
         },

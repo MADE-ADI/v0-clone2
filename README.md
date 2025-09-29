@@ -1,8 +1,8 @@
-# v0 clone
+# Sapien AI
 
 > **⚠️ Developer Preview**: This SDK is currently in beta and is subject to change. Use in production at your own risk.
 
-An example of how to use the AI Elements to build a v0 clone.
+An example of how to use the AI Elements to build Sapien AI.
 
 ## Setup
 
@@ -25,7 +25,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Features
 
-This v0 clone includes:
+Sapien AI includes:
 
 - **AI Elements Integration**: Uses AI Elements components for a polished UI
 - **v0 SDK Integration**: Connects to the v0 Platform API for generating apps
@@ -47,4 +47,4 @@ This v0 clone includes:
 - `app/api/chat/route.ts` - API route handling v0 SDK integration
 - `components/ai-elements/` - AI Elements components for the UI
 
-You now have a working v0 clone you can build off of! Feel free to explore the [v0 Platform API](https://v0.dev/docs/api/platform) and extend your app with additional features.
+You now have a working Sapien AI base you can build off of! Feel free to explore the [v0 Platform API](https://v0.dev/docs/api/platform) and extend your app with additional features.

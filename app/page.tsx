@@ -202,7 +202,7 @@ export default function Home() {
         <div className="flex-1 md:w-1/2 flex flex-col md:border-r mobile-chat-height md:h-auto">
           {/* Header */}
           <div className="border-b p-3 h-14 flex items-center justify-between flex-shrink-0">
-            <h1 className="text-lg font-semibold">v0 Clone</h1>
+            <h1 className="text-lg font-semibold">Sapien AI</h1>
             <div className="flex items-center gap-2">
               {/* Debug: Show current chat status */}
               {/* <span className="text-xs text-muted-foreground">
