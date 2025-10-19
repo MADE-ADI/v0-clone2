@@ -8,6 +8,7 @@ import { DownloadButton, FilePreviewButton } from '@/components/DownloadButton'
 import { TestDownloadButton } from '@/components/TestDownloadButton'
 import MobilePreviewButton from '@/components/MobilePreviewButton'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 
 import {
   PromptInput,
@@ -73,8 +74,12 @@ export default function Home() {
       console.log('Sending request to /api/chat...')
       
       // Create an AbortController for the request timeout
+      // Set to 10 minutes to match API route configuration
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout to match API
+      const timeoutId = setTimeout(() => {
+        console.warn('Frontend timeout reached after 10 minutes')
+        controller.abort()
+      }, 600000) // 10 minute timeout (600,000 ms)
       
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -165,7 +170,8 @@ export default function Home() {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        type: typeof error
+        type: typeof error,
+        name: error instanceof Error ? error.name : undefined
       })
       
       // Handle different types of errors with specific messages
@@ -173,11 +179,13 @@ export default function Home() {
       
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          errorMessage = "Request timed out. The generation process is taking longer than expected. Please try with a simpler request."
-        } else if (error.message.includes('504')) {
-          errorMessage = "Server timeout (504). The generation process took too long. Please try with a simpler request or try again later."
+          errorMessage = "Request timed out after 10 minutes. This might happen with very complex requests. Please try with a simpler prompt or try again later."
+        } else if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+          errorMessage = "Server timeout. Your request is being processed but is taking longer than expected. The server has a 10-minute limit. Please try with a simpler request."
         } else if (error.message.includes('Failed to fetch')) {
           errorMessage = "Network connection error. Please check your internet connection and try again."
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Request timeout. The generation is taking longer than the 10-minute limit. Please try with a simpler request."
         } else {
           errorMessage = `Error: ${error.message}. Please try again.`
         }
@@ -202,7 +210,14 @@ export default function Home() {
         <div className="flex-1 md:w-1/2 flex flex-col md:border-r mobile-chat-height md:h-auto">
           {/* Header */}
           <div className="border-b p-3 h-14 flex items-center justify-between flex-shrink-0">
-            <h1 className="text-lg font-semibold">Sapien AI</h1>
+            <Image 
+              src="/logo.png" 
+              alt="Sapien AI" 
+              width={120} 
+              height={32}
+              className="h-8 w-auto"
+              priority
+            />
             <div className="flex items-center gap-2">
               {/* Debug: Show current chat status */}
               {/* <span className="text-xs text-muted-foreground">
@@ -255,7 +270,7 @@ export default function Home() {
                       <div className="space-y-1">
                         <div>Creating your app...</div>
                         <div className="text-xs text-muted-foreground">
-                          This may take up to 60 seconds as we generate your code
+                          This may take up to 2 minutes for simple requests, or up to 10 minutes for complex apps
                         </div>
                       </div>
                     </div>

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'v0-sdk'
 
-// Configure the maximum duration for this API route (10 minutes)
-export const maxDuration = 600
+// Configure the maximum duration for this API route (10 minutes = 600 seconds)
+// This tells Vercel/Next.js to allow longer execution time
+export const maxDuration = 600 // 10 minutes in seconds
+export const dynamic = 'force-dynamic' // Ensure this route is always dynamic
 
 // Validate API key before creating client
 const apiKey = process.env.V0_API_KEY
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout
   let startTime: number = 0
+  let progressInterval: NodeJS.Timeout | undefined
   
   try {
     // Debug: Check environment and API key
@@ -60,12 +63,22 @@ export async function POST(request: NextRequest) {
 
     startTime = Date.now()
     console.log(`[${new Date().toISOString()}] Attempting to call V0 API...`)
+    console.log(`[${new Date().toISOString()}] Max timeout configured: 10 minutes (600 seconds)`)
+    
+    // Log progress every 30 seconds to show the request is still alive
+    progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      console.log(`[${new Date().toISOString()}] Request still processing... Elapsed: ${(elapsed/1000).toFixed(1)}s`)
+    }, 30000) // Log every 30 seconds
     
     while (retryCount <= maxRetries) {
       try {
         // Create timeout promise (increased to 10 minutes for complex V0 processing)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('V0 API request timeout')), 600000) // 10 minute timeout
+          setTimeout(() => {
+            clearInterval(progressInterval)
+            reject(new Error('V0 API request timeout after 10 minutes'))
+          }, 600000) // 10 minute timeout
         })
         
         let apiCall: Promise<any>
@@ -89,6 +102,7 @@ export async function POST(request: NextRequest) {
         chat = await Promise.race([apiCall, timeoutPromise])
         
         // If we get here, the call succeeded
+        clearInterval(progressInterval) // Clear progress logging
         break
         
       } catch (error) {
@@ -97,6 +111,7 @@ export async function POST(request: NextRequest) {
         
         if (retryCount > maxRetries) {
           // Max retries reached, throw the error
+          clearInterval(progressInterval) // Clear progress logging
           throw error
         }
         
@@ -111,8 +126,9 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Clear timeout if API call succeeds
+    // Clear timeout and progress logging if API call succeeds
     clearTimeout(timeoutId)
+    clearInterval(progressInterval)
 
     const endTime = Date.now()
     const duration = endTime - startTime
@@ -133,8 +149,9 @@ export async function POST(request: NextRequest) {
       })),
     })
   } catch (error) {
-    // Clear timeout in case of error
+    // Clear timeout and progress interval in case of error
     clearTimeout(timeoutId)
+    if (progressInterval) clearInterval(progressInterval)
     
     const endTime = Date.now()
     const duration = endTime - startTime
